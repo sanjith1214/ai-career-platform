@@ -18,6 +18,7 @@ import JobMatchDetails from "./pages/JobMatchDetails";
 import CareerRoadmap from "./pages/CareerRoadmap";
 import CareerRoadmapDetails from "./pages/CareerRoadmapDetails";
 
+import InterviewPreparation from "./pages/InterviewPreparation";
 import "./App.css";
 
 
@@ -113,6 +114,10 @@ function App() {
           element={
             <CareerRoadmapDetails />
           }
+        />
+        <Route
+          path="/interview-preparation"
+          element={<InterviewPreparation />}
         />
 
       </Routes>

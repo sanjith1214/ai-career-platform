@@ -79,12 +79,6 @@ const isRetryableError = (error) => {
 |--------------------------------------------------------------------------
 | Gemini Models
 |--------------------------------------------------------------------------
-|
-| We try the models in this order.
-|
-| If one model is temporarily unavailable,
-| we automatically try the next model.
-|
 */
 
 const GEMINI_MODELS = [
@@ -102,12 +96,6 @@ const GEMINI_MODELS = [
 */
 
 const analyzeResume = async (resumeText) => {
-
-  /*
-  |--------------------------------------------------------------------------
-  | AI Prompt
-  |--------------------------------------------------------------------------
-  */
 
   const prompt = `
 You are an expert AI career advisor and professional resume reviewer.
@@ -146,12 +134,6 @@ ${resumeText}
 `;
 
 
-  /*
-  |--------------------------------------------------------------------------
-  | Try Each Gemini Model
-  |--------------------------------------------------------------------------
-  */
-
   for (
     let modelIndex = 0;
     modelIndex < GEMINI_MODELS.length;
@@ -162,27 +144,10 @@ ${resumeText}
       GEMINI_MODELS[modelIndex];
 
 
-    console.log(
-      "================================="
-    );
+    console.log("=================================");
+    console.log(`Trying Gemini model: ${model}`);
+    console.log("=================================");
 
-    console.log(
-      `Trying Gemini model: ${model}`
-    );
-
-    console.log(
-      "================================="
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Retry Current Model
-    |--------------------------------------------------------------------------
-    |
-    | We give each model two attempts.
-    |
-    */
 
     const maxRetries = 1;
 
@@ -202,12 +167,6 @@ ${resumeText}
         );
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Gemini API Request
-        |--------------------------------------------------------------------------
-        */
-
         const response =
           await ai.models.generateContent({
 
@@ -222,12 +181,6 @@ ${resumeText}
 
           });
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Get Gemini Response
-        |--------------------------------------------------------------------------
-        */
 
         const text =
           response.text;
@@ -246,12 +199,6 @@ ${resumeText}
           `Gemini analysis received from ${model}`
         );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Parse JSON
-        |--------------------------------------------------------------------------
-        */
 
         try {
 
@@ -294,12 +241,6 @@ ${resumeText}
         );
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Retry Temporary Error
-        |--------------------------------------------------------------------------
-        */
-
         if (
           isRetryableError(error) &&
           attempt < maxRetries
@@ -321,12 +262,6 @@ ${resumeText}
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Move To Next Model
-        |--------------------------------------------------------------------------
-        */
-
         if (
           isRetryableError(error) &&
           modelIndex <
@@ -342,12 +277,6 @@ ${resumeText}
 
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Permanent Error
-        |--------------------------------------------------------------------------
-        */
 
         if (!isRetryableError(error)) {
 
@@ -368,23 +297,9 @@ ${resumeText}
   }
 
 
-  /*
-  |--------------------------------------------------------------------------
-  | All Models Failed
-  |--------------------------------------------------------------------------
-  */
-
-  console.error(
-    "================================="
-  );
-
-  console.error(
-    "ALL GEMINI MODELS FAILED"
-  );
-
-  console.error(
-    "================================="
-  );
+  console.error("=================================");
+  console.error("ALL GEMINI MODELS FAILED");
+  console.error("=================================");
 
 
   throw new Error(
@@ -403,12 +318,6 @@ const analyzeJobMatch = async (
   resumeText,
   jobDescription
 ) => {
-
-  /*
-  |--------------------------------------------------------------------------
-  | AI Prompt
-  |--------------------------------------------------------------------------
-  */
 
   const prompt = `
 You are an expert AI career assistant and job matching system.
@@ -455,12 +364,6 @@ ${jobDescription}
 `;
 
 
-  /*
-  |--------------------------------------------------------------------------
-  | Try Each Gemini Model
-  |--------------------------------------------------------------------------
-  */
-
   for (
     let modelIndex = 0;
     modelIndex < GEMINI_MODELS.length;
@@ -471,24 +374,12 @@ ${jobDescription}
       GEMINI_MODELS[modelIndex];
 
 
-    console.log(
-      "================================="
-    );
-
+    console.log("=================================");
     console.log(
       `Trying Gemini job matching model: ${model}`
     );
+    console.log("=================================");
 
-    console.log(
-      "================================="
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Retry Current Model
-    |--------------------------------------------------------------------------
-    */
 
     const maxRetries = 1;
 
@@ -508,12 +399,6 @@ ${jobDescription}
         );
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Gemini API Request
-        |--------------------------------------------------------------------------
-        */
-
         const response =
           await ai.models.generateContent({
 
@@ -528,12 +413,6 @@ ${jobDescription}
 
           });
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Get Gemini Response
-        |--------------------------------------------------------------------------
-        */
 
         const text =
           response.text;
@@ -552,12 +431,6 @@ ${jobDescription}
           `Gemini job matching response received from ${model}`
         );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Parse JSON
-        |--------------------------------------------------------------------------
-        */
 
         try {
 
@@ -600,12 +473,6 @@ ${jobDescription}
         );
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Retry Temporary Error
-        |--------------------------------------------------------------------------
-        */
-
         if (
           isRetryableError(error) &&
           attempt < maxRetries
@@ -627,12 +494,6 @@ ${jobDescription}
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Move To Next Model
-        |--------------------------------------------------------------------------
-        */
-
         if (
           isRetryableError(error) &&
           modelIndex <
@@ -648,12 +509,6 @@ ${jobDescription}
 
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Permanent Error
-        |--------------------------------------------------------------------------
-        */
 
         if (!isRetryableError(error)) {
 
@@ -674,23 +529,9 @@ ${jobDescription}
   }
 
 
-  /*
-  |--------------------------------------------------------------------------
-  | All Models Failed
-  |--------------------------------------------------------------------------
-  */
-
-  console.error(
-    "================================="
-  );
-
-  console.error(
-    "ALL GEMINI JOB MATCHING MODELS FAILED"
-  );
-
-  console.error(
-    "================================="
-  );
+  console.error("=================================");
+  console.error("ALL GEMINI JOB MATCHING MODELS FAILED");
+  console.error("=================================");
 
 
   throw new Error(
@@ -701,20 +542,16 @@ ${jobDescription}
 
 /*
 |--------------------------------------------------------------------------
-| Export
+| AI Career Roadmap
 |--------------------------------------------------------------------------
 */
-
-module.exports = {
-  analyzeResume,
-  analyzeJobMatch
-};
 
 const analyzeCareerRoadmap = async (
   resumeText,
   recommendedSkills = [],
   missingSkills = []
 ) => {
+
   const prompt = `
 You are an expert career mentor and technical learning planner.
 
@@ -793,19 +630,306 @@ Return exactly this structure:
 }
 `;
 
-  const result = await generateWithFallback(prompt);
 
-  let cleanedText = result.text.trim();
+  const result =
+    await generateWithFallback(prompt);
+
+  let cleanedText =
+    result.text.trim();
+
 
   if (cleanedText.startsWith("```")) {
-    cleanedText = cleanedText
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
+
+    cleanedText =
+      cleanedText
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+
   }
 
-  const roadmap = JSON.parse(cleanedText);
+
+  const roadmap =
+    JSON.parse(cleanedText);
+
 
   return roadmap;
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| Generic Gemini Generator
+|--------------------------------------------------------------------------
+|
+| This function is used by features that need the same
+| retry + fallback model system.
+|
+*/
+
+const generateWithFallback = async (prompt) => {
+
+  let lastError = null;
+
+
+  for (
+    let modelIndex = 0;
+    modelIndex < GEMINI_MODELS.length;
+    modelIndex++
+  ) {
+
+    const model =
+      GEMINI_MODELS[modelIndex];
+
+
+    console.log("=================================");
+    console.log(
+      `Trying Gemini model: ${model}`
+    );
+    console.log("=================================");
+
+
+    const maxRetries = 1;
+
+
+    for (
+      let attempt = 0;
+      attempt <= maxRetries;
+      attempt++
+    ) {
+
+      try {
+
+        console.log(
+          `Gemini request: ${model} - Attempt ${
+            attempt + 1
+          }/${maxRetries + 1}`
+        );
+
+
+        const response =
+          await ai.models.generateContent({
+
+            model,
+
+            contents: prompt,
+
+            config: {
+              responseMimeType:
+                "application/json"
+            }
+
+          });
+
+
+        if (!response.text) {
+
+          throw new Error(
+            "Gemini returned an empty response"
+          );
+
+        }
+
+
+        console.log(
+          `Gemini model succeeded: ${model}`
+        );
+
+
+        return response;
+
+      } catch (error) {
+
+        lastError = error;
+
+
+        console.error(
+          `Gemini API error (${model}):`,
+          error.message
+        );
+
+
+        if (
+          isRetryableError(error) &&
+          attempt < maxRetries
+        ) {
+
+          const delay =
+            1000 * Math.pow(2, attempt);
+
+
+          console.log(
+            `Temporary Gemini error. Retrying ${model} in ${delay}ms...`
+          );
+
+
+          await wait(delay);
+
+          continue;
+
+        }
+
+
+        if (
+          isRetryableError(error) &&
+          modelIndex <
+            GEMINI_MODELS.length - 1
+        ) {
+
+          console.log(
+            `Model ${model} unavailable. Trying next Gemini model...`
+          );
+
+
+          break;
+
+        }
+
+
+        if (!isRetryableError(error)) {
+
+          throw error;
+
+        }
+
+      }
+
+    }
+
+  }
+
+
+  throw lastError ||
+    new Error(
+      "All Gemini models failed"
+    );
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| Interview Question Generation
+|--------------------------------------------------------------------------
+*/
+
+const generateInterviewQuestions = async (
+  resumeText,
+  jobDescription = ""
+) => {
+
+  const prompt = `
+You are an expert technical interviewer and placement interviewer.
+
+Generate interview questions for a college student
+preparing for software development placements.
+
+Use the candidate's resume as the primary source.
+
+RESUME:
+${resumeText}
+
+JOB DESCRIPTION:
+${jobDescription}
+
+IMPORTANT RULES:
+
+1. Generate exactly 5 questions.
+2. Include technical, behavioral, and resume-based questions.
+3. Questions must be relevant to the candidate's actual resume.
+4. Use the job description when it is available.
+5. Do not invent technologies, projects, experience, or achievements.
+6. Include a reasonable mix of easy, medium, and hard questions.
+7. Do not provide answers.
+8. Questions should resemble real software placement interviews.
+9. Avoid duplicate questions.
+10. Return ONLY valid JSON.
+11. Do not use markdown.
+12. Do not write anything outside the JSON.
+
+Return exactly this structure:
+
+{
+  "questions": [
+    {
+      "question": "string",
+      "type": "technical",
+      "difficulty": "easy"
+    },
+    {
+      "question": "string",
+      "type": "technical",
+      "difficulty": "medium"
+    },
+    {
+      "question": "string",
+      "type": "resume-based",
+      "difficulty": "medium"
+    },
+    {
+      "question": "string",
+      "type": "behavioral",
+      "difficulty": "easy"
+    },
+    {
+      "question": "string",
+      "type": "technical",
+      "difficulty": "hard"
+    }
+  ]
+}
+`;
+
+
+  const result =
+    await generateWithFallback(prompt);
+
+
+  let cleanedText =
+    result.text.trim();
+
+
+  if (cleanedText.startsWith("```")) {
+
+    cleanedText =
+      cleanedText
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+
+  }
+
+
+  const parsed =
+    JSON.parse(cleanedText);
+
+
+  if (
+    !parsed.questions ||
+    !Array.isArray(parsed.questions)
+  ) {
+
+    throw new Error(
+      "Gemini returned invalid interview questions"
+    );
+
+  }
+
+
+  return parsed.questions;
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| Export
+|--------------------------------------------------------------------------
+*/
+
+module.exports = {
+  analyzeResume,
+  analyzeJobMatch,
+  analyzeCareerRoadmap,
+  generateInterviewQuestions
 };

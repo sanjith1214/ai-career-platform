@@ -2,24 +2,50 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 
+// ==========================================
+// LOAD ENVIRONMENT VARIABLES
+// ==========================================
+
 dotenv.config();
-
-const connectDB = require("./config/db");
-
-const authRoutes = require("./routes/authRoutes");
-const resumeRoutes = require("./routes/resumeRoutes");
-const jobRoutes = require("./routes/jobRoutes");
-const roadmapRoutes = require("./routes/roadmapRoutes");
-
-const app = express();
-
 
 // ==========================================
 // DATABASE
 // ==========================================
 
-connectDB();
+const connectDB =
+  require("./config/db");
 
+// ==========================================
+// ROUTES
+// ==========================================
+
+const authRoutes =
+  require("./routes/authRoutes");
+
+const resumeRoutes =
+  require("./routes/resumeRoutes");
+
+const jobRoutes =
+  require("./routes/jobRoutes");
+
+const roadmapRoutes =
+  require("./routes/roadmapRoutes");
+
+const interviewRoutes =
+  require("./routes/interviewRoutes");
+
+// ==========================================
+// EXPRESS APP
+// ==========================================
+
+const app =
+  express();
+
+// ==========================================
+// DATABASE CONNECTION
+// ==========================================
+
+connectDB();
 
 // ==========================================
 // MIDDLEWARE
@@ -32,11 +58,12 @@ app.use(
   })
 );
 
-app.use(express.json());
-
+app.use(
+  express.json()
+);
 
 // ==========================================
-// ROUTES
+// API ROUTES
 // ==========================================
 
 app.use(
@@ -59,25 +86,37 @@ app.use(
   roadmapRoutes
 );
 
+app.use(
+  "/api/interview",
+  interviewRoutes
+);
 
 // ==========================================
-// HOME ROUTE
+// HEALTH CHECK
 // ==========================================
 
-app.get("/", (req, res) => {
-  res.json({
-    message:
-      "AI Career Platform API is running"
-  });
-});
-
+app.get(
+  "/",
+  (req, res) => {
+    res.json({
+      message:
+        "AI Career Platform API is running"
+    });
+  }
+);
 
 // ==========================================
 // GLOBAL ERROR HANDLER
 // ==========================================
 
 app.use(
-  (err, req, res, next) => {
+  (
+    err,
+    req,
+    res,
+    next
+  ) => {
+
     console.error(
       "Server error:",
       err
@@ -90,7 +129,6 @@ app.use(
   }
 );
 
-
 // ==========================================
 // SERVER
 // ==========================================
@@ -101,8 +139,10 @@ const PORT =
 app.listen(
   PORT,
   () => {
+
     console.log(
       `Server running on port ${PORT}`
     );
+
   }
 );
