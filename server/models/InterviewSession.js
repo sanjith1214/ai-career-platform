@@ -1,87 +1,218 @@
 const mongoose = require("mongoose");
 
-const interviewQuestionSchema = new mongoose.Schema(
-  {
+
+/*
+|--------------------------------------------------------------------------
+| Interview Question Schema
+|--------------------------------------------------------------------------
+*/
+
+const interviewQuestionSchema =
+  new mongoose.Schema({
+
+    /*
+    |--------------------------------------------------------------------------
+    | Interview Question
+    |--------------------------------------------------------------------------
+    */
+
     question: {
       type: String,
       required: true
     },
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Question Type
+    |--------------------------------------------------------------------------
+    */
+
     type: {
       type: String,
+
       enum: [
         "technical",
         "behavioral",
         "resume-based"
       ],
+
       required: true
     },
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Difficulty
+    |--------------------------------------------------------------------------
+    */
+
     difficulty: {
       type: String,
+
       enum: [
         "easy",
         "medium",
         "hard"
       ],
+
       default: "medium"
     },
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Candidate Answer
+    |--------------------------------------------------------------------------
+    */
 
     answer: {
       type: String,
       default: ""
     },
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Score
+    |--------------------------------------------------------------------------
+    |
+    | Gemini gives a score between 0 and 10.
+    |
+    */
+
     score: {
       type: Number,
       default: null
     },
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Feedback
+    |--------------------------------------------------------------------------
+    */
+
     feedback: {
       type: String,
       default: ""
-    }
-  }
-);
-
-
-const interviewSessionSchema = new mongoose.Schema(
-  {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true
     },
 
-    resumeAnalysis: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "ResumeAnalysis",
-      required: true
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Identified Strengths
+    |--------------------------------------------------------------------------
+    */
+
+    strengths: {
+      type: [String],
+      default: []
     },
 
-    jobMatch: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "JobMatch",
-      default: null
-    },
 
-    jobDescription: {
-      type: String,
-      default: ""
-    },
+    /*
+    |--------------------------------------------------------------------------
+    | AI Identified Improvements
+    |--------------------------------------------------------------------------
+    */
 
-    questions: {
-      type: [interviewQuestionSchema],
+    improvements: {
+      type: [String],
       default: []
     }
-  },
-  {
-    timestamps: true
-  }
-);
+
+  });
 
 
-module.exports = mongoose.model(
-  "InterviewSession",
-  interviewSessionSchema
-);
+/*
+|--------------------------------------------------------------------------
+| Interview Session Schema
+|--------------------------------------------------------------------------
+*/
+
+const interviewSessionSchema =
+  new mongoose.Schema(
+    {
+
+      /*
+      |--------------------------------------------------------------------------
+      | User
+      |--------------------------------------------------------------------------
+      */
+
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+      },
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Resume Used For Interview
+      |--------------------------------------------------------------------------
+      */
+
+      resumeAnalysis: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ResumeAnalysis",
+        required: true
+      },
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Job Match Used For Interview
+      |--------------------------------------------------------------------------
+      */
+
+      jobMatch: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "JobMatch",
+        default: null
+      },
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Job Description
+      |--------------------------------------------------------------------------
+      */
+
+      jobDescription: {
+        type: String,
+        default: ""
+      },
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Interview Questions
+      |--------------------------------------------------------------------------
+      */
+
+      questions: {
+        type: [interviewQuestionSchema],
+        default: []
+      }
+
+    },
+
+    {
+      timestamps: true
+    }
+  );
+
+
+/*
+|--------------------------------------------------------------------------
+| Export Model
+|--------------------------------------------------------------------------
+*/
+
+module.exports =
+  mongoose.model(
+    "InterviewSession",
+    interviewSessionSchema
+  );

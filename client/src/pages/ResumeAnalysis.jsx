@@ -1,122 +1,213 @@
 import { useState } from "react";
 
+import "./ResumeAnalysis.css";
+
+
 function ResumeAnalysis() {
+
   const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [resumeText, setResumeText] = useState("");
-  const [analysis, setAnalysis] = useState(null);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [message, setMessage] =
+    useState("");
+
+  const [resumeText, setResumeText] =
+    useState("");
+
+  const [analysis, setAnalysis] =
+    useState(null);
+
+
+  // Handle file selection
 
   const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
+
+    const selectedFile =
+      e.target.files[0];
 
     setMessage("");
     setResumeText("");
     setAnalysis(null);
 
+
     if (!selectedFile) {
+
       setFile(null);
+
       return;
+
     }
+
 
     // Check PDF
-    if (selectedFile.type !== "application/pdf") {
+
+    if (
+      selectedFile.type !==
+      "application/pdf"
+    ) {
+
       setFile(null);
-      setMessage("Please select a PDF file");
-      return;
-    }
 
-    // Check file size
-    if (selectedFile.size > 5 * 1024 * 1024) {
-      setFile(null);
-      setMessage("PDF must be smaller than 5MB");
-      return;
-    }
-
-    setFile(selectedFile);
-  };
-
-  const handleUpload = async () => {
-    if (!file) {
-      setMessage("Please select your resume first");
-      return;
-    }
-
-    // Get JWT token
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      setMessage("Please login again");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setMessage("");
-      setResumeText("");
-      setAnalysis(null);
-
-      const formData = new FormData();
-
-      formData.append("resume", file);
-
-      /*
-      --------------------------------------------------
-      Send PDF + JWT token to backend
-      --------------------------------------------------
-      */
-
-      const response = await fetch(
-        "http://localhost:5000/api/resume/analyze",
-        {
-          method: "POST",
-
-          headers: {
-            Authorization: `Bearer ${token}`
-          },
-
-          body: formData
-        }
+      setMessage(
+        "Please select a PDF file"
       );
 
-      const data = await response.json();
+      return;
 
-      if (!response.ok) {
-        throw new Error(
-          data.message || "Resume analysis failed"
-        );
-      }
-
-      /*
-      --------------------------------------------------
-      Backend successfully analyzed resume
-      --------------------------------------------------
-      */
-
-      setMessage("Resume analyzed successfully!");
-
-      setResumeText(data.text);
-
-      setAnalysis(data.analysis);
-
-    } catch (error) {
-      console.error("Resume analysis error:", error);
-
-      setMessage(error.message);
-
-    } finally {
-      setLoading(false);
     }
+
+
+    // Check file size
+
+    if (
+      selectedFile.size >
+      5 * 1024 * 1024
+    ) {
+
+      setFile(null);
+
+      setMessage(
+        "PDF must be smaller than 5MB"
+      );
+
+      return;
+
+    }
+
+
+    setFile(selectedFile);
+
   };
 
+
+  // Upload and analyze resume
+
+  const handleUpload = async () => {
+
+    if (!file) {
+
+      setMessage(
+        "Please select your resume first"
+      );
+
+      return;
+
+    }
+
+
+    const token =
+      localStorage.getItem("token");
+
+
+    if (!token) {
+
+      setMessage(
+        "Please login again"
+      );
+
+      return;
+
+    }
+
+
+    try {
+
+      setLoading(true);
+
+      setMessage("");
+
+      setResumeText("");
+
+      setAnalysis(null);
+
+
+      const formData =
+        new FormData();
+
+
+      formData.append(
+        "resume",
+        file
+      );
+
+
+      const response =
+        await fetch(
+          "http://localhost:5000/api/resume/analyze",
+          {
+            method: "POST",
+
+            headers: {
+              Authorization:
+                `Bearer ${token}`
+            },
+
+            body: formData
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          data.message ||
+          "Resume analysis failed"
+        );
+
+      }
+
+
+      setMessage(
+        "Resume analyzed successfully!"
+      );
+
+
+      setResumeText(
+        data.text
+      );
+
+
+      setAnalysis(
+        data.analysis
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "Resume analysis error:",
+        error
+      );
+
+
+      setMessage(
+        error.message
+      );
+
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+
   return (
+
     <div className="resume-page">
 
       <div className="resume-container">
 
-        {/* ==============================
-            HEADER
-        ============================== */}
+
+        {/* Header */}
 
         <div className="resume-header">
 
@@ -129,16 +220,15 @@ function ResumeAnalysis() {
           </h1>
 
           <p>
-            Upload your resume and get AI-powered
-            insights about your skills and career.
+            Upload your resume and get
+            AI-powered insights about
+            your skills and career.
           </p>
 
         </div>
 
 
-        {/* ==============================
-            UPLOAD CARD
-        ============================== */}
+        {/* Upload card */}
 
         <div className="resume-upload-card">
 
@@ -146,17 +236,17 @@ function ResumeAnalysis() {
             📄
           </div>
 
+
           <h2>
             Upload Your Resume
           </h2>
+
 
           <p>
             Upload your resume in PDF format.
             Maximum file size: 5MB.
           </p>
 
-
-          {/* File input */}
 
           <input
             type="file"
@@ -165,9 +255,8 @@ function ResumeAnalysis() {
           />
 
 
-          {/* Selected file */}
-
           {file && (
+
             <div className="resume-selected-file">
 
               <strong>
@@ -177,50 +266,75 @@ function ResumeAnalysis() {
               {file.name}
 
             </div>
+
           )}
 
 
-          {/* Analyze button */}
-
           <button
             onClick={handleUpload}
-            disabled={loading || !file}
+            disabled={
+              loading ||
+              !file
+            }
           >
+
             {loading
               ? "Analyzing Resume..."
               : "Analyze Resume"}
+
           </button>
 
 
-          {/* Message */}
-
           {message && (
-            <p className="resume-message">
+
+            <p
+              className={
+                message.includes(
+                  "successfully"
+                )
+                  ? "resume-message success"
+                  : "resume-message"
+              }
+            >
               {message}
             </p>
+
           )}
 
         </div>
 
 
-        {/* ==============================
-            AI ANALYSIS
-        ============================== */}
+        {/* AI analysis */}
 
         {analysis && (
+
           <div className="resume-analysis-card">
+
 
             {/* Score */}
 
-            <div className="analysis-section">
+            <div className="analysis-score-card">
 
-              <h2>
+              <p>
                 Resume Score
-              </h2>
-
-              <p className="resume-score">
-                {analysis.score}/100
               </p>
+
+              <div className="score-number">
+                {analysis.score}
+                <span>/100</span>
+              </div>
+
+              <div className="score-bar">
+
+                <div
+                  className="score-progress"
+                  style={{
+                    width:
+                      `${analysis.score}%`
+                  }}
+                />
+
+              </div>
 
             </div>
 
@@ -233,7 +347,7 @@ function ResumeAnalysis() {
                 📋 Summary
               </h2>
 
-              <p>
+              <p className="analysis-text">
                 {analysis.summary}
               </p>
 
@@ -252,12 +366,14 @@ function ResumeAnalysis() {
 
                 {analysis.skills?.map(
                   (skill, index) => (
+
                     <span
                       key={index}
                       className="skill-tag"
                     >
                       {skill}
                     </span>
+
                   )
                 )}
 
@@ -274,13 +390,15 @@ function ResumeAnalysis() {
                 💪 Strengths
               </h2>
 
-              <ul>
+              <ul className="analysis-bullet-list">
 
                 {analysis.strengths?.map(
                   (strength, index) => (
+
                     <li key={index}>
                       {strength}
                     </li>
+
                   )
                 )}
 
@@ -297,13 +415,15 @@ function ResumeAnalysis() {
                 ⚠️ Areas to Improve
               </h2>
 
-              <ul>
+              <ul className="analysis-bullet-list">
 
                 {analysis.weaknesses?.map(
                   (weakness, index) => (
+
                     <li key={index}>
                       {weakness}
                     </li>
+
                   )
                 )}
 
@@ -320,13 +440,15 @@ function ResumeAnalysis() {
                 🚀 Suggestions
               </h2>
 
-              <ul>
+              <ul className="analysis-bullet-list">
 
                 {analysis.suggestions?.map(
                   (suggestion, index) => (
+
                     <li key={index}>
                       {suggestion}
                     </li>
+
                   )
                 )}
 
@@ -335,7 +457,7 @@ function ResumeAnalysis() {
             </div>
 
 
-            {/* Recommended Skills */}
+            {/* Recommended skills */}
 
             <div className="analysis-section">
 
@@ -347,12 +469,14 @@ function ResumeAnalysis() {
 
                 {analysis.recommendedSkills?.map(
                   (skill, index) => (
+
                     <span
                       key={index}
-                      className="skill-tag"
+                      className="skill-tag recommended"
                     >
                       {skill}
                     </span>
+
                   )
                 )}
 
@@ -361,14 +485,14 @@ function ResumeAnalysis() {
             </div>
 
           </div>
+
         )}
 
 
-        {/* ==============================
-            EXTRACTED TEXT
-        ============================== */}
+        {/* Extracted text */}
 
         {resumeText && (
+
           <div className="resume-result-card">
 
             <h2>
@@ -380,12 +504,16 @@ function ResumeAnalysis() {
             </pre>
 
           </div>
+
         )}
 
       </div>
 
     </div>
+
   );
+
 }
+
 
 export default ResumeAnalysis;

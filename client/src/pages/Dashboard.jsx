@@ -314,9 +314,9 @@ function Dashboard() {
             </p>
 
             <button
-              disabled
+              onClick={() => navigate("/interview-preparation")}
             >
-              Coming Soon
+              Practice Interview
             </button>
 
           </div>

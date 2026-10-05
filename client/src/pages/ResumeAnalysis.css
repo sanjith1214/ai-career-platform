@@ -1,0 +1,298 @@
+.resume-page {
+  min-height: 100vh;
+  background: #f5f7ff;
+  padding: 50px 20px;
+}
+
+.resume-container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Header */
+
+.resume-header {
+  text-align: center;
+  margin-bottom: 45px;
+}
+
+.resume-label {
+  color: #5b4df5;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.resume-header h1 {
+  margin: 0 0 15px;
+  color: #111827;
+  font-size: 44px;
+}
+
+.resume-header > p:last-child {
+  color: #64748b;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+/* Upload card */
+
+.resume-upload-card {
+  max-width: 700px;
+  margin: 0 auto 45px;
+  padding: 45px;
+  background: white;
+  border: 1px solid #e2e5ef;
+  border-radius: 18px;
+  text-align: center;
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.07);
+}
+
+.resume-upload-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 25px;
+  border-radius: 20px;
+  background: #eeeaff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 35px;
+}
+
+.resume-upload-card h2 {
+  margin-bottom: 10px;
+  color: #111827;
+}
+
+.resume-upload-card > p {
+  color: #64748b;
+  margin-bottom: 25px;
+  line-height: 1.6;
+}
+
+.resume-upload-card input {
+  display: block;
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 10px;
+  border: 1px solid #d8dce8;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.resume-selected-file {
+  margin: 15px 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f5f7ff;
+  color: #374151;
+  word-break: break-word;
+}
+
+.resume-upload-card button {
+  padding: 13px 25px;
+  border: none;
+  border-radius: 9px;
+  background: #5b4df5;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.resume-upload-card button:hover {
+  background: #493be0;
+  transform: translateY(-1px);
+}
+
+.resume-upload-card button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Message */
+
+.resume-message {
+  margin-top: 18px;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.resume-message.success {
+  color: #16a34a;
+}
+
+/* Analysis */
+
+.resume-analysis-card {
+  background: white;
+  padding: 35px;
+  border-radius: 18px;
+  border: 1px solid #e2e5ef;
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.06);
+}
+
+.analysis-score-card {
+  padding: 25px;
+  margin-bottom: 30px;
+  border-radius: 14px;
+  background: #f5f3ff;
+  text-align: center;
+}
+
+.analysis-score-card p {
+  margin-bottom: 5px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.score-number {
+  font-size: 46px;
+  font-weight: 800;
+  color: #5b4df5;
+}
+
+.score-number span {
+  font-size: 20px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.score-bar {
+  max-width: 500px;
+  height: 9px;
+  margin: 15px auto 0;
+  border-radius: 10px;
+  background: #ddd9ff;
+  overflow: hidden;
+}
+
+.score-progress {
+  height: 100%;
+  border-radius: 10px;
+  background: #5b4df5;
+}
+
+/* Sections */
+
+.analysis-section {
+  padding: 25px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.analysis-section:last-child {
+  border-bottom: none;
+}
+
+.analysis-section h2 {
+  margin-bottom: 15px;
+  color: #111827;
+  font-size: 23px;
+}
+
+.analysis-text {
+  color: #4b5563;
+  line-height: 1.7;
+  font-size: 16px;
+}
+
+/* Skills */
+
+.analysis-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.skill-tag {
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: #eef0ff;
+  color: #4f46e5;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.skill-tag.recommended {
+  background: #ecfdf5;
+  color: #15803d;
+}
+
+/* Lists */
+
+.analysis-bullet-list {
+  margin: 0;
+  padding-left: 22px;
+}
+
+.analysis-bullet-list li {
+  margin-bottom: 10px;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+/* Extracted text */
+
+.resume-result-card {
+  margin-top: 30px;
+  padding: 30px;
+  background: white;
+  border-radius: 18px;
+  border: 1px solid #e2e5ef;
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.05);
+}
+
+.resume-result-card h2 {
+  margin-bottom: 20px;
+  color: #111827;
+}
+
+.resume-result-card pre {
+  max-height: 500px;
+  overflow: auto;
+  padding: 20px;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Mobile */
+
+@media (max-width: 768px) {
+
+  .resume-page {
+    padding: 35px 15px;
+  }
+
+  .resume-header h1 {
+    font-size: 32px;
+  }
+
+  .resume-upload-card {
+    padding: 30px 20px;
+  }
+
+  .resume-analysis-card {
+    padding: 22px;
+  }
+
+  .analysis-section h2 {
+    font-size: 20px;
+  }
+
+  .score-number {
+    font-size: 38px;
+  }
+
+}

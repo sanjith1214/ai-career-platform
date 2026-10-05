@@ -7,6 +7,20 @@ const ai = new GoogleGenAI({
 
 /*
 |--------------------------------------------------------------------------
+| Gemini Models
+|--------------------------------------------------------------------------
+*/
+
+const GEMINI_MODELS = [
+  "gemini-3.7-flash",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite"
+];
+
+
+/*
+|--------------------------------------------------------------------------
 | Wait Helper
 |--------------------------------------------------------------------------
 */
@@ -26,7 +40,8 @@ const wait = (ms) => {
 
 const isRetryableError = (error) => {
 
-  const message = error?.message || "";
+  const message =
+    error?.message || "";
 
   const statusCode =
     error?.status ||
@@ -77,16 +92,172 @@ const isRetryableError = (error) => {
 
 /*
 |--------------------------------------------------------------------------
-| Gemini Models
+| Generic Gemini Generator With Retry + Model Fallback
 |--------------------------------------------------------------------------
 */
 
-const GEMINI_MODELS = [
-  "gemini-3.7-flash",
-  "gemini-3.6-flash",
-  "gemini-3.5-flash",
-  "gemini-3.5-flash-lite"
-];
+const generateWithFallback = async (prompt) => {
+
+  let lastError = null;
+
+
+  for (
+    let modelIndex = 0;
+    modelIndex < GEMINI_MODELS.length;
+    modelIndex++
+  ) {
+
+    const model =
+      GEMINI_MODELS[modelIndex];
+
+
+    console.log("=================================");
+    console.log(
+      `Trying Gemini model: ${model}`
+    );
+    console.log("=================================");
+
+
+    const maxRetries = 1;
+
+
+    for (
+      let attempt = 0;
+      attempt <= maxRetries;
+      attempt++
+    ) {
+
+      try {
+
+        console.log(
+          `Gemini request: ${model} - Attempt ${
+            attempt + 1
+          }/${maxRetries + 1}`
+        );
+
+
+        const response =
+          await ai.models.generateContent({
+
+            model: model,
+
+            contents: prompt,
+
+            config: {
+              responseMimeType:
+                "application/json"
+            }
+
+          });
+
+
+        if (!response.text) {
+
+          throw new Error(
+            "Gemini returned an empty response"
+          );
+
+        }
+
+
+        console.log(
+          `Gemini model succeeded: ${model}`
+        );
+
+
+        return response;
+
+      } catch (error) {
+
+        lastError = error;
+
+
+        console.error(
+          `Gemini API error (${model}):`,
+          error.message
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Retry Same Model
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+          isRetryableError(error) &&
+          attempt < maxRetries
+        ) {
+
+          const delay =
+            1000 * Math.pow(2, attempt);
+
+
+          console.log(
+            `Temporary Gemini error. Retrying ${model} in ${delay}ms...`
+          );
+
+
+          await wait(delay);
+
+          continue;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Try Next Model
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+          isRetryableError(error) &&
+          modelIndex <
+            GEMINI_MODELS.length - 1
+        ) {
+
+          console.log(
+            `Model ${model} unavailable. Trying next Gemini model...`
+          );
+
+
+          break;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Non-Retryable Error
+        |--------------------------------------------------------------------------
+        */
+
+        if (!isRetryableError(error)) {
+
+          throw error;
+
+        }
+
+      }
+
+    }
+
+  }
+
+
+  console.error("=================================");
+  console.error("ALL GEMINI MODELS FAILED");
+  console.error("=================================");
+
+
+  throw (
+    lastError ||
+    new Error(
+      "All Gemini models failed"
+    )
+  );
+};
 
 
 /*
@@ -95,7 +266,9 @@ const GEMINI_MODELS = [
 |--------------------------------------------------------------------------
 */
 
-const analyzeResume = async (resumeText) => {
+const analyzeResume = async (
+  resumeText
+) => {
 
   const prompt = `
 You are an expert AI career advisor and professional resume reviewer.
@@ -134,177 +307,58 @@ ${resumeText}
 `;
 
 
-  for (
-    let modelIndex = 0;
-    modelIndex < GEMINI_MODELS.length;
-    modelIndex++
-  ) {
-
-    const model =
-      GEMINI_MODELS[modelIndex];
+  const result =
+    await generateWithFallback(prompt);
 
 
-    console.log("=================================");
-    console.log(`Trying Gemini model: ${model}`);
-    console.log("=================================");
+  let cleanedText =
+    result.text.trim();
 
 
-    const maxRetries = 1;
+  /*
+  |--------------------------------------------------------------------------
+  | Remove Markdown Code Block If Gemini Adds It
+  |--------------------------------------------------------------------------
+  */
 
+  if (cleanedText.startsWith("```")) {
 
-    for (
-      let attempt = 0;
-      attempt <= maxRetries;
-      attempt++
-    ) {
-
-      try {
-
-        console.log(
-          `Gemini request: ${model} - Attempt ${
-            attempt + 1
-          }/${maxRetries + 1}`
-        );
-
-
-        const response =
-          await ai.models.generateContent({
-
-            model: model,
-
-            contents: prompt,
-
-            config: {
-              responseMimeType:
-                "application/json"
-            }
-
-          });
-
-
-        const text =
-          response.text;
-
-
-        if (!text) {
-
-          throw new Error(
-            "Gemini returned an empty response"
-          );
-
-        }
-
-
-        console.log(
-          `Gemini analysis received from ${model}`
-        );
-
-
-        try {
-
-          const parsedResult =
-            JSON.parse(text);
-
-
-          console.log(
-            "Gemini JSON parsed successfully"
-          );
-
-
-          console.log(
-            `Successful Gemini model: ${model}`
-          );
-
-
-          return parsedResult;
-
-        } catch (jsonError) {
-
-          console.error(
-            "Gemini returned invalid JSON:"
-          );
-
-          console.error(text);
-
-
-          throw new Error(
-            "Gemini returned invalid JSON"
-          );
-
-        }
-
-      } catch (error) {
-
-        console.error(
-          `Gemini API error (${model}):`,
-          error.message
-        );
-
-
-        if (
-          isRetryableError(error) &&
-          attempt < maxRetries
-        ) {
-
-          const delay =
-            1000 * Math.pow(2, attempt);
-
-
-          console.log(
-            `Temporary Gemini error. Retrying ${model} in ${delay}ms...`
-          );
-
-
-          await wait(delay);
-
-          continue;
-
-        }
-
-
-        if (
-          isRetryableError(error) &&
-          modelIndex <
-            GEMINI_MODELS.length - 1
-        ) {
-
-          console.log(
-            `Model ${model} unavailable. Trying next Gemini model...`
-          );
-
-
-          break;
-
-        }
-
-
-        if (!isRetryableError(error)) {
-
-          console.error(
-            "Gemini returned a non-retryable error."
-          );
-
-          throw new Error(
-            "Failed to analyze resume with AI"
-          );
-
-        }
-
-      }
-
-    }
+    cleanedText =
+      cleanedText
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
 
   }
 
 
-  console.error("=================================");
-  console.error("ALL GEMINI MODELS FAILED");
-  console.error("=================================");
+  try {
+
+    const parsedResult =
+      JSON.parse(cleanedText);
 
 
-  throw new Error(
-    "Failed to analyze resume with AI. Gemini models are temporarily unavailable."
-  );
+    console.log(
+      "Gemini resume JSON parsed successfully"
+    );
+
+
+    return parsedResult;
+
+  } catch (error) {
+
+    console.error(
+      "Gemini returned invalid resume JSON:"
+    );
+
+    console.error(cleanedText);
+
+    throw new Error(
+      "Gemini returned invalid JSON"
+    );
+
+  }
 };
 
 
@@ -364,179 +418,52 @@ ${jobDescription}
 `;
 
 
-  for (
-    let modelIndex = 0;
-    modelIndex < GEMINI_MODELS.length;
-    modelIndex++
-  ) {
-
-    const model =
-      GEMINI_MODELS[modelIndex];
+  const result =
+    await generateWithFallback(prompt);
 
 
-    console.log("=================================");
-    console.log(
-      `Trying Gemini job matching model: ${model}`
-    );
-    console.log("=================================");
+  let cleanedText =
+    result.text.trim();
 
 
-    const maxRetries = 1;
+  if (cleanedText.startsWith("```")) {
 
-
-    for (
-      let attempt = 0;
-      attempt <= maxRetries;
-      attempt++
-    ) {
-
-      try {
-
-        console.log(
-          `Gemini job matching request: ${model} - Attempt ${
-            attempt + 1
-          }/${maxRetries + 1}`
-        );
-
-
-        const response =
-          await ai.models.generateContent({
-
-            model: model,
-
-            contents: prompt,
-
-            config: {
-              responseMimeType:
-                "application/json"
-            }
-
-          });
-
-
-        const text =
-          response.text;
-
-
-        if (!text) {
-
-          throw new Error(
-            "Gemini returned an empty response"
-          );
-
-        }
-
-
-        console.log(
-          `Gemini job matching response received from ${model}`
-        );
-
-
-        try {
-
-          const parsedResult =
-            JSON.parse(text);
-
-
-          console.log(
-            "Gemini job matching JSON parsed successfully"
-          );
-
-
-          console.log(
-            `Successful Gemini job matching model: ${model}`
-          );
-
-
-          return parsedResult;
-
-        } catch (jsonError) {
-
-          console.error(
-            "Gemini job matching returned invalid JSON:"
-          );
-
-          console.error(text);
-
-
-          throw new Error(
-            "Gemini job matching returned invalid JSON"
-          );
-
-        }
-
-      } catch (error) {
-
-        console.error(
-          `Gemini job matching API error (${model}):`,
-          error.message
-        );
-
-
-        if (
-          isRetryableError(error) &&
-          attempt < maxRetries
-        ) {
-
-          const delay =
-            1000 * Math.pow(2, attempt);
-
-
-          console.log(
-            `Temporary Gemini error. Retrying ${model} in ${delay}ms...`
-          );
-
-
-          await wait(delay);
-
-          continue;
-
-        }
-
-
-        if (
-          isRetryableError(error) &&
-          modelIndex <
-            GEMINI_MODELS.length - 1
-        ) {
-
-          console.log(
-            `Model ${model} unavailable. Trying next Gemini model...`
-          );
-
-
-          break;
-
-        }
-
-
-        if (!isRetryableError(error)) {
-
-          console.error(
-            "Gemini job matching returned a non-retryable error."
-          );
-
-          throw new Error(
-            "Failed to match resume with job using AI"
-          );
-
-        }
-
-      }
-
-    }
+    cleanedText =
+      cleanedText
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
 
   }
 
 
-  console.error("=================================");
-  console.error("ALL GEMINI JOB MATCHING MODELS FAILED");
-  console.error("=================================");
+  try {
+
+    const parsedResult =
+      JSON.parse(cleanedText);
 
 
-  throw new Error(
-    "Failed to match resume with job using AI. Gemini models are temporarily unavailable."
-  );
+    console.log(
+      "Gemini job matching JSON parsed successfully"
+    );
+
+
+    return parsedResult;
+
+  } catch (error) {
+
+    console.error(
+      "Gemini job matching returned invalid JSON:"
+    );
+
+    console.error(cleanedText);
+
+    throw new Error(
+      "Gemini job matching returned invalid JSON"
+    );
+
+  }
 };
 
 
@@ -634,6 +561,7 @@ Return exactly this structure:
   const result =
     await generateWithFallback(prompt);
 
+
   let cleanedText =
     result.text.trim();
 
@@ -650,160 +578,32 @@ Return exactly this structure:
   }
 
 
-  const roadmap =
-    JSON.parse(cleanedText);
+  try {
+
+    const roadmap =
+      JSON.parse(cleanedText);
 
 
-  return roadmap;
-};
-
-
-/*
-|--------------------------------------------------------------------------
-| Generic Gemini Generator
-|--------------------------------------------------------------------------
-|
-| This function is used by features that need the same
-| retry + fallback model system.
-|
-*/
-
-const generateWithFallback = async (prompt) => {
-
-  let lastError = null;
-
-
-  for (
-    let modelIndex = 0;
-    modelIndex < GEMINI_MODELS.length;
-    modelIndex++
-  ) {
-
-    const model =
-      GEMINI_MODELS[modelIndex];
-
-
-    console.log("=================================");
     console.log(
-      `Trying Gemini model: ${model}`
+      "Gemini career roadmap JSON parsed successfully"
     );
-    console.log("=================================");
 
 
-    const maxRetries = 1;
+    return roadmap;
 
+  } catch (error) {
 
-    for (
-      let attempt = 0;
-      attempt <= maxRetries;
-      attempt++
-    ) {
+    console.error(
+      "Gemini career roadmap returned invalid JSON:"
+    );
 
-      try {
+    console.error(cleanedText);
 
-        console.log(
-          `Gemini request: ${model} - Attempt ${
-            attempt + 1
-          }/${maxRetries + 1}`
-        );
-
-
-        const response =
-          await ai.models.generateContent({
-
-            model,
-
-            contents: prompt,
-
-            config: {
-              responseMimeType:
-                "application/json"
-            }
-
-          });
-
-
-        if (!response.text) {
-
-          throw new Error(
-            "Gemini returned an empty response"
-          );
-
-        }
-
-
-        console.log(
-          `Gemini model succeeded: ${model}`
-        );
-
-
-        return response;
-
-      } catch (error) {
-
-        lastError = error;
-
-
-        console.error(
-          `Gemini API error (${model}):`,
-          error.message
-        );
-
-
-        if (
-          isRetryableError(error) &&
-          attempt < maxRetries
-        ) {
-
-          const delay =
-            1000 * Math.pow(2, attempt);
-
-
-          console.log(
-            `Temporary Gemini error. Retrying ${model} in ${delay}ms...`
-          );
-
-
-          await wait(delay);
-
-          continue;
-
-        }
-
-
-        if (
-          isRetryableError(error) &&
-          modelIndex <
-            GEMINI_MODELS.length - 1
-        ) {
-
-          console.log(
-            `Model ${model} unavailable. Trying next Gemini model...`
-          );
-
-
-          break;
-
-        }
-
-
-        if (!isRetryableError(error)) {
-
-          throw error;
-
-        }
-
-      }
-
-    }
+    throw new Error(
+      "Gemini returned invalid roadmap JSON"
+    );
 
   }
-
-
-  throw lastError ||
-    new Error(
-      "All Gemini models failed"
-    );
 };
 
 
@@ -901,23 +701,223 @@ Return exactly this structure:
   }
 
 
-  const parsed =
-    JSON.parse(cleanedText);
+  try {
+
+    const parsed =
+      JSON.parse(cleanedText);
 
 
-  if (
-    !parsed.questions ||
-    !Array.isArray(parsed.questions)
-  ) {
+    if (
+      !parsed.questions ||
+      !Array.isArray(parsed.questions)
+    ) {
+
+      throw new Error(
+        "Gemini returned invalid interview questions"
+      );
+
+    }
+
+
+    console.log(
+      "Gemini interview questions JSON parsed successfully"
+    );
+
+
+    return parsed.questions;
+
+  } catch (error) {
+
+    console.error(
+      "Gemini interview questions returned invalid JSON:"
+    );
+
+    console.error(cleanedText);
 
     throw new Error(
       "Gemini returned invalid interview questions"
     );
 
   }
+};
 
 
-  return parsed.questions;
+/*
+|--------------------------------------------------------------------------
+| Evaluate Interview Answer
+|--------------------------------------------------------------------------
+*/
+
+const evaluateInterviewAnswer = async (
+  question,
+  answer,
+  resumeText = "",
+  jobDescription = ""
+) => {
+
+  const prompt = `
+You are an expert software development interviewer.
+
+Evaluate the candidate's answer to the interview question.
+
+INTERVIEW QUESTION:
+${question}
+
+CANDIDATE ANSWER:
+${answer}
+
+CANDIDATE RESUME:
+${resumeText}
+
+JOB DESCRIPTION:
+${jobDescription}
+
+Evaluate the answer based on:
+
+1. Technical correctness
+2. Understanding of the concept
+3. Relevance to the question
+4. Clarity of explanation
+5. Completeness
+
+Return ONLY valid JSON.
+
+Return exactly this structure:
+
+{
+  "score": 0,
+  "feedback": "",
+  "strengths": [],
+  "improvements": []
+}
+
+Rules:
+
+1. score must be a number between 0 and 10.
+2. Give a fair score based primarily on the actual answer.
+3. Do not give a high score simply because the resume is strong.
+4. Feedback should explain why the answer received the score.
+5. Strengths should identify what the candidate did well.
+6. Improvements should explain how the candidate can improve.
+7. Do not invent information.
+8. Do not provide information unrelated to the question.
+9. Do not judge grammar too harshly if the technical meaning is clear.
+10. Return ONLY JSON.
+11. Do not use markdown.
+`;
+
+
+  const result =
+    await generateWithFallback(prompt);
+
+
+  let cleanedText =
+    result.text.trim();
+
+
+  if (cleanedText.startsWith("```")) {
+
+    cleanedText =
+      cleanedText
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+
+  }
+
+
+  try {
+
+    const evaluation =
+      JSON.parse(cleanedText);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Score
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      typeof evaluation.score !== "number" ||
+      evaluation.score < 0 ||
+      evaluation.score > 10
+    ) {
+
+      throw new Error(
+        "Invalid interview evaluation score"
+      );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Feedback
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      typeof evaluation.feedback !== "string"
+    ) {
+
+      throw new Error(
+        "Invalid interview evaluation feedback"
+      );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Arrays
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      !Array.isArray(
+        evaluation.strengths
+      )
+    ) {
+
+      evaluation.strengths = [];
+
+    }
+
+
+    if (
+      !Array.isArray(
+        evaluation.improvements
+      )
+    ) {
+
+      evaluation.improvements = [];
+
+    }
+
+
+    console.log(
+      "Gemini interview answer evaluation JSON parsed successfully"
+    );
+
+
+    return evaluation;
+
+  } catch (error) {
+
+    console.error(
+      "Gemini interview evaluation returned invalid JSON:"
+    );
+
+    console.error(cleanedText);
+
+
+    throw new Error(
+      "Gemini returned invalid interview evaluation"
+    );
+
+  }
 };
 
 
@@ -928,8 +928,15 @@ Return exactly this structure:
 */
 
 module.exports = {
+
   analyzeResume,
+
   analyzeJobMatch,
+
   analyzeCareerRoadmap,
-  generateInterviewQuestions
+
+  generateInterviewQuestions,
+
+  evaluateInterviewAnswer
+
 };

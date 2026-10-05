@@ -2,8 +2,13 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../services/api";
 
+import "./Login.css";
+
+
 function Register() {
+
   const navigate = useNavigate();
+
 
   const [formData, setFormData] = useState({
     name: "",
@@ -12,20 +17,32 @@ function Register() {
     confirmPassword: ""
   });
 
+
   const [message, setMessage] = useState("");
+
   const [loading, setLoading] = useState(false);
 
+
+  // Handle input changes
+
   const handleChange = (e) => {
+
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+
   };
 
+
+  // Handle registration
+
   const handleSubmit = async (e) => {
+
     e.preventDefault();
 
     setMessage("");
+
 
     if (
       !formData.name ||
@@ -33,44 +50,95 @@ function Register() {
       !formData.password ||
       !formData.confirmPassword
     ) {
-      setMessage("Please fill all fields");
+
+      setMessage(
+        "Please fill all fields"
+      );
+
       return;
+
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      setMessage("Passwords do not match");
+
+    if (
+      formData.password !==
+      formData.confirmPassword
+    ) {
+
+      setMessage(
+        "Passwords do not match"
+      );
+
       return;
+
     }
+
 
     try {
+
       setLoading(true);
 
+
       await registerUser({
-        name: formData.name,
-        email: formData.email,
-        password: formData.password
+
+        name:
+          formData.name,
+
+        email:
+          formData.email,
+
+        password:
+          formData.password
+
       });
 
-      setMessage("Registration successful!");
+
+      setMessage(
+        "Registration successful!"
+      );
+
 
       setTimeout(() => {
+
         navigate("/login");
+
       }, 1000);
+
+
     } catch (error) {
-      setMessage(error.message);
+
+      setMessage(
+        error.message
+      );
+
+
     } finally {
+
       setLoading(false);
+
     }
+
   };
 
-  return (
-    <div className="auth-page">
-      <div className="auth-container">
-        <h1>Create Account</h1>
 
-        <p>Start your AI-powered career journey</p>
+  return (
+
+    <div className="auth-page">
+
+      <div className="auth-container">
+
+        <h1>
+          Create Account
+        </h1>
+
+
+        <p className="auth-subtitle">
+          Start your AI-powered career journey
+        </p>
+
 
         <form onSubmit={handleSubmit}>
+
           <input
             type="text"
             name="name"
@@ -78,6 +146,7 @@ function Register() {
             value={formData.name}
             onChange={handleChange}
           />
+
 
           <input
             type="email"
@@ -87,6 +156,7 @@ function Register() {
             onChange={handleChange}
           />
 
+
           <input
             type="password"
             name="password"
@@ -94,6 +164,7 @@ function Register() {
             value={formData.password}
             onChange={handleChange}
           />
+
 
           <input
             type="password"
@@ -103,19 +174,47 @@ function Register() {
             onChange={handleChange}
           />
 
-          {message && <p>{message}</p>}
 
-          <button type="submit" disabled={loading}>
-            {loading ? "Creating account..." : "Register"}
+          {message && (
+
+            <p className="auth-error">
+              {message}
+            </p>
+
+          )}
+
+
+          <button
+            type="submit"
+            disabled={loading}
+          >
+
+            {loading
+              ? "Creating account..."
+              : "Register"}
+
           </button>
+
         </form>
 
-        <p>
-          Already have an account? <Link to="/login">Login</Link>
+
+        <p className="auth-switch">
+
+          Already have an account?{" "}
+
+          <Link to="/login">
+            Login
+          </Link>
+
         </p>
+
       </div>
+
     </div>
+
   );
+
 }
+
 
 export default Register;

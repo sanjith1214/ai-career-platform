@@ -11,12 +11,12 @@ function InterviewPreparation() {
 
   const [error, setError] = useState("");
 
+  const [answers, setAnswers] = useState({});
 
-  /*
-  |--------------------------------------------------------------------------
-  | Generate Interview Questions
-  |--------------------------------------------------------------------------
-  */
+  const [evaluatingId, setEvaluatingId] = useState(null);
+
+
+  // Generate interview
 
   const generateInterview = async () => {
 
@@ -26,22 +26,9 @@ function InterviewPreparation() {
 
       setError("");
 
-
-      /*
-      |--------------------------------------------------------------------------
-      | Get JWT token
-      |--------------------------------------------------------------------------
-      */
-
       const token =
         localStorage.getItem("token");
 
-
-      /*
-      |--------------------------------------------------------------------------
-      | Send request to backend
-      |--------------------------------------------------------------------------
-      */
 
       const response =
         await fetch(
@@ -57,21 +44,9 @@ function InterviewPreparation() {
         );
 
 
-      /*
-      |--------------------------------------------------------------------------
-      | Convert response to JSON
-      |--------------------------------------------------------------------------
-      */
-
       const data =
         await response.json();
 
-
-      /*
-      |--------------------------------------------------------------------------
-      | Check for backend error
-      |--------------------------------------------------------------------------
-      */
 
       if (!response.ok) {
 
@@ -83,15 +58,12 @@ function InterviewPreparation() {
       }
 
 
-      /*
-      |--------------------------------------------------------------------------
-      | Store interview data
-      |--------------------------------------------------------------------------
-      */
-
       setInterview(
         data.interview
       );
+
+
+      setAnswers({});
 
 
     } catch (error) {
@@ -117,11 +89,137 @@ function InterviewPreparation() {
   };
 
 
-  /*
-  |--------------------------------------------------------------------------
-  | UI
-  |--------------------------------------------------------------------------
-  */
+  // Handle answer
+
+  const handleAnswerChange = (
+    questionId,
+    answer
+  ) => {
+
+    setAnswers({
+
+      ...answers,
+
+      [questionId]:
+        answer
+
+    });
+
+  };
+
+
+  // Evaluate answer
+
+  const evaluateAnswer = async (
+    questionId
+  ) => {
+
+    try {
+
+      setEvaluatingId(
+        questionId
+      );
+
+      setError("");
+
+
+      const token =
+        localStorage.getItem("token");
+
+
+      const answer =
+        answers[questionId] || "";
+
+
+      if (!answer.trim()) {
+
+        throw new Error(
+          "Please write an answer first."
+        );
+
+      }
+
+
+      const response =
+        await fetch(
+          `http://localhost:5000/api/interview/${interview._id}/question/${questionId}/evaluate`,
+          {
+            method: "POST",
+
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+              answer: answer
+            })
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          data.message ||
+            "Failed to submit answer"
+        );
+
+      }
+
+
+      // Update evaluated question
+
+      setInterview((previousInterview) => {
+
+        if (!previousInterview) {
+          return previousInterview;
+        }
+
+
+        return {
+
+          ...previousInterview,
+
+          questions:
+            previousInterview.questions.map(
+              (question) =>
+                question._id === questionId
+                  ? data.question
+                  : question
+            )
+
+        };
+
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        "Answer submission error:",
+        error
+      );
+
+
+      setError(
+        error.message ||
+          "Something went wrong"
+      );
+
+
+    } finally {
+
+      setEvaluatingId(null);
+
+    }
+
+  };
+
 
   return (
 
@@ -130,9 +228,7 @@ function InterviewPreparation() {
       <div className="interview-container">
 
 
-        {/* ==========================================
-            HEADER
-        ========================================== */}
+        {/* Header */}
 
         <div className="interview-header">
 
@@ -148,9 +244,7 @@ function InterviewPreparation() {
         </div>
 
 
-        {/* ==========================================
-            GENERATE BUTTON
-        ========================================== */}
+        {/* Generate button */}
 
         <button
           className="generate-interview-button"
@@ -165,9 +259,7 @@ function InterviewPreparation() {
         </button>
 
 
-        {/* ==========================================
-            ERROR MESSAGE
-        ========================================== */}
+        {/* Error */}
 
         {error && (
 
@@ -180,9 +272,7 @@ function InterviewPreparation() {
         )}
 
 
-        {/* ==========================================
-            INTERVIEW QUESTIONS
-        ========================================== */}
+        {/* Questions */}
 
         {interview && (
 
@@ -198,11 +288,10 @@ function InterviewPreparation() {
 
                 <div
                   className="interview-question-card"
-                  key={index}
+                  key={item._id || index}
                 >
 
-
-                  {/* Question Number */}
+                  {/* Question number */}
 
                   <h3>
                     Question {index + 1}
@@ -218,7 +307,49 @@ function InterviewPreparation() {
                   </p>
 
 
-                  {/* Question Information */}
+                  {/* Answer */}
+
+                  <textarea
+                    className="interview-answer"
+                    placeholder="Write your answer here..."
+                    value={
+                      answers[item._id] || ""
+                    }
+                    onChange={(event) => {
+
+                      handleAnswerChange(
+                        item._id,
+                        event.target.value
+                      );
+
+                    }}
+                  />
+
+
+                  {/* Evaluate button */}
+
+                  <button
+                    className="evaluate-answer-button"
+                    disabled={
+                      evaluatingId === item._id
+                    }
+                    onClick={() => {
+
+                      evaluateAnswer(
+                        item._id
+                      );
+
+                    }}
+                  >
+
+                    {evaluatingId === item._id
+                      ? "Evaluating..."
+                      : "Evaluate Answer"}
+
+                  </button>
+
+
+                  {/* Question information */}
 
                   <div className="interview-meta">
 
@@ -236,6 +367,123 @@ function InterviewPreparation() {
                     </span>
 
                   </div>
+
+
+                  {/* AI evaluation */}
+
+                  {item.score !== null &&
+                    item.score !== undefined && (
+
+                    <div className="interview-evaluation">
+
+                      <h3>
+                        AI Evaluation
+                      </h3>
+
+
+                      {/* Score */}
+
+                      <div className="interview-score">
+
+                        <strong>
+                          Score:
+                        </strong>
+
+                        <span>
+                          {item.score}/10
+                        </span>
+
+                      </div>
+
+
+                      {/* Feedback */}
+
+                      {item.feedback && (
+
+                        <div className="interview-feedback">
+
+                          <strong>
+                            Feedback
+                          </strong>
+
+                          <p>
+                            {item.feedback}
+                          </p>
+
+                        </div>
+
+                      )}
+
+
+                      {/* Strengths */}
+
+                      {item.strengths &&
+                        item.strengths.length > 0 && (
+
+                        <div className="interview-strengths">
+
+                          <strong>
+                            Strengths
+                          </strong>
+
+                          <ul>
+
+                            {item.strengths.map(
+                              (strength, strengthIndex) => (
+
+                                <li
+                                  key={strengthIndex}
+                                >
+                                  {strength}
+                                </li>
+
+                              )
+                            )}
+
+                          </ul>
+
+                        </div>
+
+                      )}
+
+
+                      {/* Improvements */}
+
+                      {item.improvements &&
+                        item.improvements.length > 0 && (
+
+                        <div className="interview-improvements">
+
+                          <strong>
+                            Improvements
+                          </strong>
+
+                          <ul>
+
+                            {item.improvements.map(
+                              (
+                                improvement,
+                                improvementIndex
+                              ) => (
+
+                                <li
+                                  key={improvementIndex}
+                                >
+                                  {improvement}
+                                </li>
+
+                              )
+                            )}
+
+                          </ul>
+
+                        </div>
+
+                      )}
+
+                    </div>
+
+                  )}
 
                 </div>
 
