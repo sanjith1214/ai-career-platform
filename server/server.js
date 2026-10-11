@@ -1,56 +1,29 @@
+
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 
-// ==========================================
-// LOAD ENVIRONMENT VARIABLES
-// ==========================================
-
+// Load environment variables
 dotenv.config();
 
-// ==========================================
-// DATABASE
-// ==========================================
+// Database
+const connectDB = require("./config/db");
 
-const connectDB =
-  require("./config/db");
+// Routes
+const authRoutes = require("./routes/authRoutes");
+const resumeRoutes = require("./routes/resumeRoutes");
+const jobRoutes = require("./routes/jobRoutes");
+const roadmapRoutes = require("./routes/roadmapRoutes");
+const interviewRoutes = require("./routes/interviewRoutes");
+const insightsRoutes = require("./routes/insightsRoutes");
 
-// ==========================================
-// ROUTES
-// ==========================================
+// Express app
+const app = express();
 
-const authRoutes =
-  require("./routes/authRoutes");
-
-const resumeRoutes =
-  require("./routes/resumeRoutes");
-
-const jobRoutes =
-  require("./routes/jobRoutes");
-
-const roadmapRoutes =
-  require("./routes/roadmapRoutes");
-
-const interviewRoutes =
-  require("./routes/interviewRoutes");
-
-// ==========================================
-// EXPRESS APP
-// ==========================================
-
-const app =
-  express();
-
-// ==========================================
-// DATABASE CONNECTION
-// ==========================================
-
+// Connect to MongoDB
 connectDB();
 
-// ==========================================
-// MIDDLEWARE
-// ==========================================
-
+// Middleware
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -58,91 +31,35 @@ app.use(
   })
 );
 
-app.use(
-  express.json()
-);
+app.use(express.json());
 
-// ==========================================
-// API ROUTES
-// ==========================================
+// API routes
+app.use("/api/auth", authRoutes);
+app.use("/api/resume", resumeRoutes);
+app.use("/api/job", jobRoutes);
+app.use("/api/roadmap", roadmapRoutes);
+app.use("/api/interview", interviewRoutes);
+app.use("/api/insights", insightsRoutes);
 
-app.use(
-  "/api/auth",
-  authRoutes
-);
+// Health check
+app.get("/", (req, res) => {
+  res.json({
+    message: "AI Career Platform API is running"
+  });
+});
 
-app.use(
-  "/api/resume",
-  resumeRoutes
-);
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error("Server error:", err);
 
-app.use(
-  "/api/job",
-  jobRoutes
-);
+  res.status(500).json({
+    message: "Internal server error"
+  });
+});
 
-app.use(
-  "/api/roadmap",
-  roadmapRoutes
-);
+// Start server
+const PORT = process.env.PORT || 5000;
 
-app.use(
-  "/api/interview",
-  interviewRoutes
-);
-
-// ==========================================
-// HEALTH CHECK
-// ==========================================
-
-app.get(
-  "/",
-  (req, res) => {
-    res.json({
-      message:
-        "AI Career Platform API is running"
-    });
-  }
-);
-
-// ==========================================
-// GLOBAL ERROR HANDLER
-// ==========================================
-
-app.use(
-  (
-    err,
-    req,
-    res,
-    next
-  ) => {
-
-    console.error(
-      "Server error:",
-      err
-    );
-
-    res.status(500).json({
-      message:
-        "Internal server error"
-    });
-  }
-);
-
-// ==========================================
-// SERVER
-// ==========================================
-
-const PORT =
-  process.env.PORT || 5000;
-
-app.listen(
-  PORT,
-  () => {
-
-    console.log(
-      `Server running on port ${PORT}`
-    );
-
-  }
-);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

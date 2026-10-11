@@ -1,3 +1,4 @@
+
 import { Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
@@ -19,8 +20,9 @@ import CareerRoadmap from "./pages/CareerRoadmap";
 import CareerRoadmapDetails from "./pages/CareerRoadmapDetails";
 
 import InterviewPreparation from "./pages/InterviewPreparation";
-import "./App.css";
+import CareerInsights from "./pages/CareerInsights";
 
+import "./App.css";
 
 function App() {
   return (
@@ -28,21 +30,13 @@ function App() {
       <Navbar />
 
       <Routes>
-
-        {/* ==============================
-            HOME
-        ============================== */}
-
+        {/* Home */}
         <Route
           path="/"
           element={<Home />}
         />
 
-
-        {/* ==============================
-            AUTHENTICATION
-        ============================== */}
-
+        {/* Authentication */}
         <Route
           path="/login"
           element={<Login />}
@@ -53,21 +47,13 @@ function App() {
           element={<Register />}
         />
 
-
-        {/* ==============================
-            DASHBOARD
-        ============================== */}
-
+        {/* Dashboard */}
         <Route
           path="/dashboard"
           element={<Dashboard />}
         />
 
-
-        {/* ==============================
-            RESUME ANALYSIS
-        ============================== */}
-
+        {/* Resume Analysis */}
         <Route
           path="/resume-analysis"
           element={<ResumeAnalysis />}
@@ -75,16 +61,10 @@ function App() {
 
         <Route
           path="/resume-analysis/:id"
-          element={
-            <ResumeAnalysisDetails />
-          }
+          element={<ResumeAnalysisDetails />}
         />
 
-
-        {/* ==============================
-            JOB MATCHING
-        ============================== */}
-
+        {/* Job Matching */}
         <Route
           path="/job-matching"
           element={<JobMatching />}
@@ -92,41 +72,36 @@ function App() {
 
         <Route
           path="/job-matching/:id"
-          element={
-            <JobMatchDetails />
-          }
+          element={<JobMatchDetails />}
         />
 
-
-        {/* ==============================
-            AI CAREER ROADMAP
-        ============================== */}
-
+        {/* AI Career Roadmap */}
         <Route
           path="/career-roadmap"
-          element={
-            <CareerRoadmap />
-          }
+          element={<CareerRoadmap />}
         />
 
         <Route
           path="/career-roadmap/:id"
-          element={
-            <CareerRoadmapDetails />
-          }
+          element={<CareerRoadmapDetails />}
         />
+
+        {/* Interview Preparation */}
         <Route
           path="/interview-preparation"
           element={<InterviewPreparation />}
         />
 
+        {/* Career Insights */}
+        <Route
+          path="/career-insights"
+          element={<CareerInsights />}
+        />
       </Routes>
-
 
       <Footer />
     </>
   );
 }
-
 
 export default App;
