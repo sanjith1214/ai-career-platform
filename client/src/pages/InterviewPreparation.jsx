@@ -9,18 +9,19 @@ function InterviewPreparation() {
   const [loading, setLoading] = useState(false);
   const [interview, setInterview] = useState(null);
   const [error, setError] = useState("");
-
   const [answers, setAnswers] = useState({});
   const [evaluatingId, setEvaluatingId] = useState(null);
 
   const [history, setHistory] = useState([]);
   const [progress, setProgress] = useState(null);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [openingId, setOpeningId] = useState(null);
+  const [showRecommendations, setShowRecommendations] = useState(true);
 
-  const token = localStorage.getItem("token");
-
-  // Load history and progress
+  // Load saved sessions and progress
   const loadInterviewData = useCallback(async () => {
+    const token = localStorage.getItem("token");
+
     if (!token) {
       setError("Please log in to access interview preparation.");
       setHistoryLoading(false);
@@ -58,22 +59,28 @@ function InterviewPreparation() {
       setHistory(historyData.interviews || []);
       setProgress(progressData);
     } catch (err) {
-      console.error("Interview history error:", err);
+      console.error("Interview data error:", err);
       setError(err.message || "Failed to load interview data");
     } finally {
       setHistoryLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     loadInterviewData();
   }, [loadInterviewData]);
 
-  // Generate interview questions
+  // Generate a new interview
   const generateInterview = async () => {
     try {
       setLoading(true);
       setError("");
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error("Please log in again.");
+      }
 
       const response = await fetch(`${API_URL}/generate`, {
         method: "POST",
@@ -92,14 +99,70 @@ function InterviewPreparation() {
       }
 
       setInterview(data.interview);
-      setAnswers({});
+
+      const savedAnswers = {};
+
+      (data.interview.questions || []).forEach((question) => {
+        savedAnswers[question._id] = question.answer || "";
+      });
+
+      setAnswers(savedAnswers);
 
       await loadInterviewData();
+
+      document.getElementById("current-interview")
+        ?.scrollIntoView({ behavior: "smooth" });
     } catch (err) {
       console.error("Interview generation error:", err);
       setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Open an existing saved session
+  const openInterviewSession = async (sessionId) => {
+    try {
+      setOpeningId(sessionId);
+      setError("");
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error("Please log in again.");
+      }
+
+      const response = await fetch(`${API_URL}/${sessionId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to load interview session"
+        );
+      }
+
+      setInterview(data.interview);
+
+      const savedAnswers = {};
+
+      (data.interview.questions || []).forEach((question) => {
+        savedAnswers[question._id] = question.answer || "";
+      });
+
+      setAnswers(savedAnswers);
+
+      document.getElementById("current-interview")
+        ?.scrollIntoView({ behavior: "smooth" });
+    } catch (err) {
+      console.error("Open interview session error:", err);
+      setError(err.message || "Failed to open interview session");
+    } finally {
+      setOpeningId(null);
     }
   };
 
@@ -117,7 +180,12 @@ function InterviewPreparation() {
       setEvaluatingId(questionId);
       setError("");
 
+      const token = localStorage.getItem("token");
       const answer = answers[questionId] || "";
+
+      if (!token) {
+        throw new Error("Please log in again.");
+      }
 
       if (!answer.trim()) {
         throw new Error("Please write an answer first.");
@@ -141,7 +209,7 @@ function InterviewPreparation() {
 
       if (!response.ok) {
         throw new Error(
-          data.message || "Failed to submit answer"
+          data.message || "Failed to evaluate answer"
         );
       }
 
@@ -152,18 +220,16 @@ function InterviewPreparation() {
 
         return {
           ...previousInterview,
-          questions: previousInterview.questions.map(
-            (question) =>
-              question._id === questionId
-                ? data.question
-                : question
+          questions: previousInterview.questions.map((question) =>
+            question._id === questionId ? data.question : question
           )
         };
       });
 
+      // Refresh history, summary, and chart data
       await loadInterviewData();
     } catch (err) {
-      console.error("Answer submission error:", err);
+      console.error("Answer evaluation error:", err);
       setError(err.message || "Something went wrong");
     } finally {
       setEvaluatingId(null);
@@ -172,21 +238,44 @@ function InterviewPreparation() {
 
   const formatDate = (date) => {
     if (!date) return "Date unavailable";
-
     return new Date(date).toLocaleString();
   };
 
   const formatScore = (score) => {
-    return typeof score === "number"
-      ? `${score}/10`
-      : "Not scored";
+    return typeof score === "number" ? `${score}/10` : "Not scored";
   };
+
+  const getStatusClass = (status) => {
+    if (status === "Completed") return "interview-status-completed";
+    if (status === "In progress") return "interview-status-in-progress";
+    return "interview-status-not-started";
+  };
+  // Derive weak topics from evaluated questions in the currently open session.
+  const weakTopics = (interview?.questions || [])
+    .filter(
+      (question) =>
+        typeof question.score === "number" && question.score < 6
+    )
+    .map((question) => ({
+      id: question._id,
+      topic: question.question,
+      score: question.score,
+      feedback: question.feedback,
+      improvements: question.improvements || []
+    }));
+
+  const evaluatedCurrentQuestions = (interview?.questions || [])
+    .filter((question) => typeof question.score === "number").length;
+
+  // Only show sessions that have at least one evaluated answer.
+  const scoredSessions = (progress?.sessions || []).filter(
+    (session) => typeof session.averageScore === "number"
+  );
 
   return (
     <div className="interview-page">
       <div className="interview-container">
-
-        {/* Header */}
+        {/* Page header */}
         <header className="interview-header">
           <h1>AI Interview Preparation</h1>
           <p>
@@ -195,7 +284,7 @@ function InterviewPreparation() {
           </p>
         </header>
 
-        {/* Error */}
+        {/* Error message */}
         {error && (
           <p className="interview-error" role="alert">
             {error}
@@ -226,14 +315,14 @@ function InterviewPreparation() {
               <div className="interview-stat-grid">
                 <article className="interview-stat-card">
                   <span>Total Sessions</span>
-                  <strong>{progress.totalSessions}</strong>
+                  <strong>{progress.totalSessions ?? 0}</strong>
                 </article>
 
                 <article className="interview-stat-card">
                   <span>Answers Evaluated</span>
-                  <strong>{progress.answeredQuestions}</strong>
+                  <strong>{progress.answeredQuestions ?? 0}</strong>
                   <small>
-                    Out of {progress.totalQuestions} questions
+                    Out of {progress.totalQuestions ?? 0} questions
                   </small>
                 </article>
 
@@ -243,6 +332,7 @@ function InterviewPreparation() {
                 </article>
               </div>
 
+              {/* Score progress summary */}
               <div className="interview-trend-card">
                 <h3>Score Progress</h3>
 
@@ -260,127 +350,270 @@ function InterviewPreparation() {
                   <p>
                     <span>Score difference</span>
                     <strong>
-                      {progress.improvement === null
+                      {progress.improvement == null
                         ? "Not enough data"
-                        : `${progress.improvement > 0 ? "+" : ""}${progress.improvement}/10`}
+                        : `${
+                            progress.improvement > 0 ? "+" : ""
+                          }${progress.improvement}/10`}
                     </strong>
                   </p>
                 </div>
 
                 <p className="interview-progress-note">
                   The difference compares your first and latest sessions
-                  that have evaluated answers.
+                  that contain evaluated answers.
                 </p>
+              </div>
+
+              {/* Score history chart */}
+              <div className="interview-chart-card">
+                <h3>Interview Score History</h3>
+
+                <p className="interview-chart-description">
+                  Compare your average score across practice sessions.
+                </p>
+
+                {scoredSessions.length > 0 ? (
+                  <div className="interview-chart">
+                    {scoredSessions.map((session) => (
+                      <div
+                        className="interview-chart-column"
+                        key={session._id}
+                      >
+                        <span className="interview-chart-score">
+                          {session.averageScore}/10
+                        </span>
+
+                        <div className="interview-chart-bar-area">
+                          <div
+                            className="interview-chart-bar"
+                            style={{
+                              height: `${
+                                Math.max(
+                                  0,
+                                  Math.min(session.averageScore * 10, 100)
+                                )
+                              }%`
+                            }}
+                          />
+                        </div>
+
+                        <span className="interview-chart-label">
+                          {formatDate(session.createdAt)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p>
+                    Your score chart will appear after you complete and
+                    evaluate at least one interview answer.
+                  </p>
+                )}
               </div>
             </>
           ) : (
-            <p>Progress data is unavailable.</p>
+            <p>Progress information is not available yet.</p>
           )}
         </section>
 
-        {/* Generate interview */}
-        <section className="interview-generate-section">
-          <h2>Start a Practice Session</h2>
+        {/* Personalized recommendations */}
+        <section className="interview-recommendations">
+          <div className="interview-recommendations-heading">
+            <div>
+              <h2>Personalized Recommendations</h2>
+              <p>
+                Review lower-scoring answers from your currently open
+                interview and identify what to improve.
+              </p>
+            </div>
+          </div>
+
+          {interview ? (
+            <>
+              <div className="interview-recommendation-summary">
+                <article>
+                  <span>Evaluated Answers</span>
+                  <strong>{evaluatedCurrentQuestions}</strong>
+                </article>
+
+                <article>
+                  <span>Topics to Improve</span>
+                  <strong>{weakTopics.length}</strong>
+                </article>
+              </div>
+
+              {evaluatedCurrentQuestions === 0 ? (
+                <p>
+                  Evaluate an interview answer to receive personalized
+                  recommendations.
+                </p>
+              ) : weakTopics.length === 0 ? (
+                <p>
+                  Great work! None of your evaluated answers scored below
+                  6/10. Continue practising to maintain your performance.
+                </p>
+              ) : (
+                <div className="interview-weak-topics">
+                  <h3>Focus on These Questions</h3>
+
+                  {weakTopics.map((topic) => (
+                    <article
+                      className="interview-weak-topic-card"
+                      key={topic.id}
+                    >
+                      <div className="interview-weak-topic-top">
+                        <h4>{topic.topic}</h4>
+
+                        <span className="interview-weak-topic-score">
+                          {topic.score}/10
+                        </span>
+                      </div>
+
+                      {topic.feedback && (
+                        <div>
+                          <h4>Feedback</h4>
+                          <p>{topic.feedback}</p>
+                        </div>
+                      )}
+
+                      {topic.improvements.length > 0 && (
+                        <div>
+                          <h4>How to Improve</h4>
+                          <ul>
+                            {topic.improvements.map((improvement, index) => (
+                              <li key={index}>{improvement}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <p>
+              Open an interview session or generate a new one to see
+              personalized recommendations.
+            </p>
+          )}
+        </section>
+
+        {/* Generate a new interview */}
+        <section className="interview-generator">
+          <h2>Start a New Interview</h2>
           <p>
-            Generate personalized questions from your resume and latest
-            job-match analysis.
+            Generate personalized interview questions to practise your
+            technical and communication skills.
           </p>
 
           <button
-            className="generate-interview-button"
-            disabled={loading}
+            className="interview-primary-button"
             onClick={generateInterview}
+            disabled={loading}
           >
-            {loading
-              ? "Generating..."
-              : "Generate Interview Questions"}
+            {loading ? "Generating Questions..." : "Generate Interview"}
           </button>
         </section>
 
         {/* Current interview */}
         {interview && (
-          <section className="interview-questions">
-            <h2>Interview Questions</h2>
+          <section
+            className="current-interview"
+            id="current-interview"
+          >
+            <div className="current-interview-heading">
+              <div>
+                <h2>{interview.title || "Your Interview Session"}</h2>
+                <p>
+                  Created: {formatDate(interview.createdAt)}
+                </p>
+              </div>
 
-            {interview.questions.map((item, index) => (
+              <span
+                className={`interview-status ${getStatusClass(
+                  interview.status
+                )}`}
+              >
+                {interview.status || "In progress"}
+              </span>
+            </div>
+
+            {interview.questions?.map((question, index) => (
               <article
                 className="interview-question-card"
-                key={item._id || index}
+                key={question._id}
               >
-                <h3>Question {index + 1}</h3>
+                <h3>
+                  Question {index + 1}: {question.question}
+                </h3>
 
-                <p className="interview-question">
-                  {item.question}
-                </p>
+                {question.category && (
+                  <p className="interview-question-category">
+                    Category: {question.category}
+                  </p>
+                )}
 
-                <div className="interview-meta">
-                  <span className="interview-badge">
-                    Type: {item.type}
-                  </span>
-
-                  <span className="interview-badge">
-                    Difficulty: {item.difficulty}
-                  </span>
-                </div>
+                <label htmlFor={`answer-${question._id}`}>
+                  Your Answer
+                </label>
 
                 <textarea
-                  className="interview-answer"
-                  placeholder="Write your answer here..."
-                  value={answers[item._id] ?? item.answer ?? ""}
+                  id={`answer-${question._id}`}
+                  value={answers[question._id] || ""}
                   onChange={(event) =>
                     handleAnswerChange(
-                      item._id,
+                      question._id,
                       event.target.value
                     )
                   }
+                  placeholder="Write your answer here..."
+                  rows={6}
                 />
 
                 <button
-                  className="evaluate-answer-button"
-                  disabled={evaluatingId === item._id}
-                  onClick={() => evaluateAnswer(item._id)}
+                  className="interview-evaluate-button"
+                  onClick={() => evaluateAnswer(question._id)}
+                  disabled={evaluatingId === question._id}
                 >
-                  {evaluatingId === item._id
+                  {evaluatingId === question._id
                     ? "Evaluating..."
                     : "Evaluate Answer"}
                 </button>
 
-                {typeof item.score === "number" && (
-                  <div className="interview-evaluation">
-                    <h3>AI Evaluation</h3>
+                {typeof question.score === "number" && (
+                  <div className="interview-answer-feedback">
+                    <h4>
+                      Score: {formatScore(question.score)}
+                    </h4>
 
-                    <div className="interview-score">
-                      <strong>Score:</strong>
-                      <span>{item.score}/10</span>
-                    </div>
-
-                    {item.feedback && (
-                      <div className="interview-feedback">
-                        <strong>Feedback</strong>
-                        <p>{item.feedback}</p>
-                      </div>
+                    {question.feedback && (
+                      <p>{question.feedback}</p>
                     )}
 
-                    {item.strengths?.length > 0 && (
-                      <div className="interview-strengths">
-                        <strong>Strengths</strong>
+                    {question.strengths?.length > 0 && (
+                      <>
+                        <h4>Strengths</h4>
                         <ul>
-                          {item.strengths.map((strength, i) => (
-                            <li key={i}>{strength}</li>
+                          {question.strengths.map((strength, index) => (
+                            <li key={index}>{strength}</li>
                           ))}
                         </ul>
-                      </div>
+                      </>
                     )}
 
-                    {item.improvements?.length > 0 && (
-                      <div className="interview-improvements">
-                        <strong>Improvements</strong>
+                    {question.improvements?.length > 0 && (
+                      <>
+                        <h4>Areas to Improve</h4>
                         <ul>
-                          {item.improvements.map((improvement, i) => (
-                            <li key={i}>{improvement}</li>
-                          ))}
+                          {question.improvements.map(
+                            (improvement, index) => (
+                              <li key={index}>{improvement}</li>
+                            )
+                          )}
                         </ul>
-                      </div>
+                      </>
                     )}
                   </div>
                 )}
@@ -389,71 +622,71 @@ function InterviewPreparation() {
           </section>
         )}
 
-        {/* Interview history */}
+        {/* Previous interview sessions */}
         <section className="interview-history">
           <div className="interview-history-heading">
             <div>
               <h2>Previous Interview Sessions</h2>
-              <p>Review your saved sessions and scores.</p>
+              <p>
+                Reopen a saved session to review answers and feedback.
+              </p>
             </div>
+
+            <button
+              className="interview-refresh-button"
+              onClick={loadInterviewData}
+              disabled={historyLoading}
+            >
+              {historyLoading ? "Refreshing..." : "Refresh History"}
+            </button>
           </div>
 
           {historyLoading ? (
             <p>Loading interview history...</p>
           ) : history.length === 0 ? (
-            <div className="interview-history-empty">
-              <h3>No Interview Sessions Yet</h3>
-              <p>
-                Generate your first interview to start tracking your
-                preparation.
-              </p>
-            </div>
+            <p>
+              No saved interview sessions yet. Generate your first
+              interview to get started.
+            </p>
           ) : (
             <div className="interview-history-list">
-              {history.map((session, index) => (
+              {history.map((session) => (
                 <article
                   className="interview-history-card"
                   key={session._id}
                 >
-                  <div className="interview-history-card-top">
-                    <div>
-                      <h3>
-                        Interview Session #{history.length - index}
-                      </h3>
-                      <p>{formatDate(session.createdAt)}</p>
-                    </div>
+                  <div className="interview-history-card-content">
+                    <h3>
+                      {session.title || "Interview Practice"}
+                    </h3>
 
-                    <span
-                      className={`interview-status interview-status-${session.status
-                        .toLowerCase()
-                        .replace(/\s+/g, "-")}`}
-                    >
-                      {session.status}
-                    </span>
-                  </div>
-
-                  <div className="interview-history-stats">
                     <p>
-                      <span>Questions</span>
-                      <strong>{session.totalQuestions}</strong>
+                      Created: {formatDate(session.createdAt)}
                     </p>
 
                     <p>
-                      <span>Evaluated</span>
-                      <strong>{session.answeredQuestions}</strong>
+                      Status: {session.status || "In progress"}
                     </p>
 
                     <p>
-                      <span>Average Score</span>
-                      <strong>{formatScore(session.averageScore)}</strong>
+                      Score: {formatScore(session.averageScore)}
                     </p>
                   </div>
+
+                  <button
+                    className="interview-open-button"
+                    onClick={() => openInterviewSession(session._id)}
+                    disabled={openingId === session._id}
+                  >
+                    {openingId === session._id
+                      ? "Opening..."
+                      : "Open Session"}
+                  </button>
                 </article>
               ))}
             </div>
           )}
         </section>
-
       </div>
     </div>
   );
