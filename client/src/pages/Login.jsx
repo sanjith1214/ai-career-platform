@@ -26,26 +26,34 @@ function LoginContent() {
     });
   };
 
-  // Existing email/password login
+  // Email and password login
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!formData.email || !formData.password) {
-      setError("Please enter email and password");
+    if (!formData.email.trim() || !formData.password) {
+      setError("Please enter your email and password.");
       return;
     }
 
     try {
       setLoading(true);
 
-      const data = await loginUser(formData);
+      const data = await loginUser({
+        email: formData.email.trim(),
+        password: formData.password,
+      });
 
       if (!data?.token) {
         throw new Error("Login response did not contain a token.");
       }
 
       localStorage.setItem("token", data.token);
+
+      if (data.user?.name) {
+        localStorage.setItem("userName", data.user.name);
+      }
+
       navigate("/dashboard");
     } catch (err) {
       setError(err.message || "Login failed. Please try again.");
@@ -82,11 +90,16 @@ function LoginContent() {
         throw new Error(data.message || "Google sign-in failed.");
       }
 
-      if (!data.token) {
+      if (!data?.token) {
         throw new Error("Server response did not contain a token.");
       }
 
       localStorage.setItem("token", data.token);
+
+      if (data.user?.name) {
+        localStorage.setItem("userName", data.user.name);
+      }
+
       navigate("/dashboard");
     } catch (err) {
       setError(err.message || "Google sign-in failed. Please try again.");
@@ -104,26 +117,13 @@ function LoginContent() {
           Login to continue your career journey
         </p>
 
-        {error && <p className="auth-error">{error}</p>}
+        {error && (
+          <p className="auth-error" role="alert">
+            {error}
+          </p>
+        )}
 
-        <div className="google-login-container">
-          {googleLoading ? (
-            <p>Signing in with Google...</p>
-          ) : (
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setError("Google sign-in was unsuccessful.")}
-              text="continue_with"
-              shape="rectangular"
-              width="100%"
-            />
-          )}
-        </div>
-
-        <div className="auth-divider">
-          <span>OR</span>
-        </div>
-
+        {/* Email and password form first */}
         <form onSubmit={handleSubmit}>
           <input
             type="email"
@@ -133,6 +133,7 @@ function LoginContent() {
             placeholder="Enter your email"
             autoComplete="email"
             required
+            disabled={loading || googleLoading}
           />
 
           <input
@@ -143,12 +144,38 @@ function LoginContent() {
             placeholder="Enter your password"
             autoComplete="current-password"
             required
+            disabled={loading || googleLoading}
           />
 
-          <button type="submit" disabled={loading || googleLoading}>
+          <button
+            type="submit"
+            disabled={loading || googleLoading}
+          >
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
+
+        {/* Divider between the two login methods */}
+        <div className="auth-divider">
+          <span>OR</span>
+        </div>
+
+        {/* Google Sign-In below the form */}
+        <div className="google-login-container">
+          {googleLoading ? (
+            <p>Signing in with Google...</p>
+          ) : (
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() =>
+                setError("Google sign-in was unsuccessful. Please try again.")
+              }
+              text="continue_with"
+              shape="rectangular"
+              width="100%"
+            />
+          )}
+        </div>
 
         <p className="auth-switch">
           Don't have an account? <Link to="/register">Register</Link>
@@ -167,7 +194,7 @@ function Login() {
         <div className="auth-container">
           <h1>Configuration Required</h1>
           <p className="auth-error">
-            Google Client ID is missing. Check the client/.env file and restart
+            Google Client ID is missing. Check client/.env and restart
             the Vite development server.
           </p>
         </div>
@@ -183,3 +210,4 @@ function Login() {
 }
 
 export default Login;
+

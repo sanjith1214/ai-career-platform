@@ -32,7 +32,7 @@ function RegisterContent() {
     });
   };
 
-  // Existing email/password registration
+  // Email and password registration
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
@@ -101,11 +101,16 @@ function RegisterContent() {
         throw new Error(data.message || "Google sign-in failed.");
       }
 
-      if (!data.token) {
+      if (!data?.token) {
         throw new Error("Server response did not contain a token.");
       }
 
       localStorage.setItem("token", data.token);
+
+      if (data.user?.name) {
+        localStorage.setItem("userName", data.user.name);
+      }
+
       navigate("/dashboard");
     } catch (error) {
       setMessage(error.message || "Google sign-in failed.");
@@ -129,26 +134,7 @@ function RegisterContent() {
           </p>
         )}
 
-        <div className="google-login-container">
-          {googleLoading ? (
-            <p>Signing in with Google...</p>
-          ) : (
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() =>
-                setMessage("Google sign-in was unsuccessful.")
-              }
-              text="signup_with"
-              shape="rectangular"
-              width="100%"
-            />
-          )}
-        </div>
-
-        <div className="auth-divider">
-          <span>OR</span>
-        </div>
-
+        {/* Registration form comes first */}
         <form onSubmit={handleSubmit}>
           <input
             type="text"
@@ -158,6 +144,7 @@ function RegisterContent() {
             onChange={handleChange}
             autoComplete="name"
             required
+            disabled={loading || googleLoading}
           />
 
           <input
@@ -168,6 +155,7 @@ function RegisterContent() {
             onChange={handleChange}
             autoComplete="email"
             required
+            disabled={loading || googleLoading}
           />
 
           <input
@@ -178,6 +166,7 @@ function RegisterContent() {
             onChange={handleChange}
             autoComplete="new-password"
             required
+            disabled={loading || googleLoading}
           />
 
           <input
@@ -188,6 +177,7 @@ function RegisterContent() {
             onChange={handleChange}
             autoComplete="new-password"
             required
+            disabled={loading || googleLoading}
           />
 
           <button
@@ -197,6 +187,30 @@ function RegisterContent() {
             {loading ? "Creating account..." : "Register"}
           </button>
         </form>
+
+        {/* Divider between registration methods */}
+        <div className="auth-divider">
+          <span>OR</span>
+        </div>
+
+        {/* Google Sign-Up comes below the form */}
+        <div className="google-login-container">
+          {googleLoading ? (
+            <p>Signing in with Google...</p>
+          ) : (
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() =>
+                setMessage(
+                  "Google sign-in was unsuccessful. Please try again."
+                )
+              }
+              text="signup_with"
+              shape="rectangular"
+              width="100%"
+            />
+          )}
+        </div>
 
         <p className="auth-switch">
           Already have an account? <Link to="/login">Login</Link>
@@ -214,6 +228,7 @@ function Register() {
       <div className="auth-page">
         <div className="auth-container">
           <h1>Configuration Required</h1>
+
           <p className="auth-error">
             Google Client ID is missing. Check client/.env and restart Vite.
           </p>
